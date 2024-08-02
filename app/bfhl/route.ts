@@ -2,45 +2,38 @@ import connectMongoDB from '@/lib/mongodb';
 import User from '@/models/user';
 import { NextResponse } from 'next/server';
 
-// POST handler
 export async function POST(req:any) {
-  await connectMongoDB();
-  const { full_name, dob, usermail, collegeEmailID, collegeRollNumber, numbersArray, alphabetsArray } = await req.json();
-
-  if (!full_name || !dob || !usermail || !collegeEmailID || !collegeRollNumber || !numbersArray || !alphabetsArray) {
-    return NextResponse.json({ message: "Fill all the details", is_success: false }, { status: 422 });
-  }
-
   try {
-    const preuser = await User.findOne({ usermail: usermail });
-    if (preuser) {
-      return NextResponse.json({ message: "This email already exists", is_success: false }, { status: 422 });
-    } else {
-      const newUser = new User({
-        full_name, 
-        dob,
-        usermail, 
-        collegeEmailID,
-        collegeRollNumber,
-        numbersArray,
-        alphabetsArray
-      });
-
-      const storeData = await newUser.save();
-      return NextResponse.json({
-        status: "User successfully added",
-        is_success: true,
-        user_id: storeData.user_id,
-        collegeEmailID: storeData.collegeEmailID,
-        collegeRollNumber: storeData.collegeRollNumber,
-        numbersArray: storeData.numbersArray,
-        alphabetsArray: storeData.alphabetsArray
-      }, { status: 201 });
+    const { data } = await req.json();
+    
+    if (!Array.isArray(data)) {
+      return NextResponse.json({ message: "Invalid data format", is_success: false }, { status: 400 });
     }
+
+    // Separate numbers and alphabets
+    const numbers = data.filter(item => !isNaN(item));
+    const alphabets = data.filter(item => /^[A-Za-z]$/.test(item));
+
+    // Find the highest alphabet (case insensitive)
+    const highestAlphabet = alphabets.reduce((max, curr) => {
+      return curr.toUpperCase() > max.toUpperCase() ? curr : max;
+    }, "");
+
+    // Format the result
+    return NextResponse.json({
+      is_success: true,
+      user_id: "john_doe_17091999",
+      email: "john@xyz.com",
+      roll_number: "ABCD123",
+      numbers,
+      alphabets,
+      highest_alphabet: [highestAlphabet]
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ message: (error as Error).message, is_success: false }, { status: 500 });
   }
 }
+
 
 
 export async function GET(req:any) {
